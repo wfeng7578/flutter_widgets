@@ -1,4 +1,3 @@
-import 'package:code/constant/colors_constant.dart';
 import 'package:code/controller/search_box_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
