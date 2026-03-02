@@ -1,27 +1,38 @@
-import 'package:code/controller/navigation_controller.dart';
+import 'package:code/controller/app_controller.dart';
+import 'package:code/pages/home/widgets/search_box.dart';
+import 'package:code/pages/home/widgets/songs_list.dart';
+import 'package:code/widgets/app_drawer.dart';
+import 'package:code/widgets/mini_player.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class MyHome extends StatelessWidget {
-  MyHome({super.key});
+class HomePage extends StatelessWidget {
+  HomePage({super.key});
 
-  final NavigationController navigationController =
-      Get.put(NavigationController());
+  final AppController appController = Get.put(AppController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      onDrawerChanged: appController.onChangedDrawer,
+      drawer: AppDrawer(),
       appBar: AppBar(
-        title: Text("首页"),
+        scrolledUnderElevation: 0,
+        backgroundColor: Color(0xfffbeaff),
+        title: SearchBox(),
+        actions: [
+          TextButton(
+            onPressed: () {},
+            child: Text("搜索"),
+          ),
+          SizedBox(width: 10),
+        ],
       ),
-      bottomNavigationBar: Obx(
-        () => NavigationBar(
-            selectedIndex: navigationController.selectionIndex.value,
-            onDestinationSelected: navigationController.changeNavigationIndex,
-            destinations: [
-              NavigationDestination(icon: Icon(Icons.home), label: "首页"),
-              NavigationDestination(icon: Icon(Icons.person), label: "我的")
-            ]),
+      body: Stack(
+        children: [
+          SongsList(),
+          MiniPlayer(),
+        ],
       ),
     );
   }

@@ -1,4 +1,4 @@
-import 'package:code/pages/home/home_page.dart';
+import 'package:code/routers/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -12,11 +12,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      title: "Pika Music",
+      initialRoute: AppRouter.main, // 初始路由
+      getPages: AppRouter.routers, // 注册路由表
       debugShowCheckedModeBanner: false, // 关闭右上角DEBUG横幅
       theme: ThemeData(
         useMaterial3: true, // 启用Material3风格
       ),
-      home: MyHome(),
     );
   }
 }
