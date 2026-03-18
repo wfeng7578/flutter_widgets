@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flutter 组件大全</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Flutter 组件</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索组件...">
+                </div>
+            </div>
+            <nav id="toc" class="toc-list">
+                <!-- Table of Contents will be generated here -->
+            </nav>
+        </aside>
+        <main class="content-area">
+            <div id="content" class="markdown-body">
+                <div class="loading">正在加载内容...</div>
+            </div>
+            <button id="backToTop" class="back-to-top" aria-label="回到顶部">↑</button>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
