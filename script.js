@@ -1,192 +1,200 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const contentDiv = document.getElementById('content');
-    const tocNav = document.getElementById('toc');
-    const searchInput = document.getElementById('searchInput');
 
-    // Fetch Markdown content
-    fetch(encodeURIComponent('Flutter组件大全.md'))
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Failed to load markdown file: ${response.statusText}`);
-            }
-            return response.text();
-        })
-        .then(markdown => {
-            // Configure marked options
-            marked.use({
-                gfm: true,
-                breaks: true,
-            });
+// Syntax Highlighting
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre code').forEach((el) => {
+        hljs.highlightElement(el);
+    });
+});
 
-            // Render Markdown
-            contentDiv.innerHTML = marked.parse(markdown);
+// Toggle Sidebar Categories
+function toggleCategory(element) {
+    element.parentElement.classList.toggle('collapsed');
+}
 
-            // Post-process: Add IDs to headers and generate TOC
-            generateTOC();
+// Search Functionality
+const searchInput = document.getElementById('searchInput');
+const cards = document.querySelectorAll('.markdown-body');
+const categories = document.querySelectorAll('.category-section');
+const navItems = document.querySelectorAll('.toc-item');
+const navCategories = document.querySelectorAll('.toc-category');
+const noResults = document.getElementById('noResults');
 
-            // Highlight code blocks
-            document.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block);
-            });
+searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    let hasVisibleCards = false;
 
-            // Setup Search
-            setupSearch();
-
-            // Setup Scroll Spy
-            setupScrollSpy();
-        })
-        .catch(error => {
-            contentDiv.innerHTML = `<div class="error" style="color:red; padding:20px;">
-                <h3>加载失败</h3>
-                <p>无法读取 Markdown 文件。请确保文件名正确且未被移动。</p>
-                <p>错误信息: ${error.message}</p>
-                <p>提示：如果是本地直接打开 HTML 文件，可能会遇到跨域限制。请使用 VS Code 的 "Live Server" 插件或 Python http.server 启动本地服务。</p>
-            </div>`;
-            console.error(error);
+    // Reset all if query is empty
+    if (query === '') {
+        cards.forEach(c => c.style.display = 'block');
+        categories.forEach(c => c.style.display = 'block');
+        navItems.forEach(n => n.style.display = 'block');
+        navCategories.forEach(n => {
+            n.style.display = 'block';
+            n.classList.remove('collapsed');
         });
-
-    function generateTOC() {
-        const headers = contentDiv.querySelectorAll('h1, h2, h3');
-        const tocList = document.createElement('ul');
-        tocList.className = 'toc-root';
-        // Clear existing content
-        tocNav.innerHTML = '';
-
-        headers.forEach((header, index) => {
-            // Create ID if not exists or ensure unique
-            if (!header.id) {
-                const slug = header.textContent
-                    .trim()
-                    .toLowerCase()
-                    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-') // Support Chinese characters
-                    .replace(/^-+|-+$/g, '');
-                header.id = slug || `section-${index}`;
-            }
-
-            // Create TOC item wrapper
-            const li = document.createElement('li');
-            li.className = `toc-item-wrapper level-${header.tagName.toLowerCase()}`;
-
-            // Create Link
-            const link = document.createElement('a');
-            link.className = 'toc-item';
-            link.textContent = header.textContent;
-            link.href = `#${header.id}`;
-            link.dataset.target = header.id;
-
-            // Smooth scroll on click
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                header.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                // Update URL hash
-                history.pushState(null, null, `#${header.id}`);
-
-                // Manually update active state immediately
-                document.querySelectorAll('.toc-item').forEach(item => item.classList.remove('active'));
-                link.classList.add('active');
-            });
-
-            li.appendChild(link);
-            tocList.appendChild(li);
-        });
-
-        tocNav.appendChild(tocList);
+        noResults.style.display = 'none';
+        return;
     }
 
-    function setupSearch() {
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const items = tocNav.querySelectorAll('.toc-item-wrapper');
-
-            items.forEach(li => {
-                const link = li.querySelector('a');
-                const text = link.textContent.toLowerCase();
-                if (text.includes(query)) {
-                    li.style.display = 'block';
-                } else {
-                    li.style.display = 'none';
-                }
-            });
-        });
-    }
-
-    function setupScrollSpy() {
-        const contentArea = document.querySelector('.content-area');
-        const tocItems = Array.from(tocNav.querySelectorAll('.toc-item'));
-
-        // Function to find active section
-        const onScroll = () => {
-            const headers = Array.from(contentDiv.querySelectorAll('h1, h2, h3'));
-            if (headers.length === 0) return;
-
-            let currentHeader = null;
-            // Offset to consider "active" (e.g., header is near top of viewport)
-            const offset = 100;
-
-            // Find the last header that is above the cutoff
-            // Use contentArea.scrollTop instead of window.scrollY because of our layout
-            const scrollPos = contentArea.scrollTop;
-
-            // Alternatively, use getBoundingClientRect relative to viewport
-            // Since headers are inside contentArea which scrolls
-
-            for (const header of headers) {
-                const rect = header.getBoundingClientRect();
-                // If header is above a threshold (e.g. 150px from top of viewport)
-                if (rect.top < 150) {
-                    currentHeader = header;
-                } else {
-                    // Once we find a header below the threshold, the previous one was the current one
-                    break;
-                }
+    // Search logic
+    categories.forEach(category => {
+        let hasVisibleCardInCategory = false;
+        const catCards = category.querySelectorAll('.markdown-body');
+        let firstNavItem = null;
+        
+        catCards.forEach(card => {
+            const searchText = card.getAttribute('data-search-text') || '';
+            const compId = card.id;
+            const navItem = document.querySelector(`.toc-item[data-target="${compId}"]`);
+            if (!firstNavItem && navItem) {
+                firstNavItem = navItem;
             }
-
-            if (currentHeader) {
-                const id = currentHeader.id;
-                tocItems.forEach(item => {
-                    if (item.dataset.target === id) {
-                        item.classList.add('active');
-                        // Optional: Scroll TOC to keep active item in view
-                        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    } else {
-                        item.classList.remove('active');
-                    }
-                });
-            }
-        };
-
-        // Throttled scroll listener on the scrollable container
-        let ticking = false;
-        contentArea.addEventListener('scroll', () => {
-            if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    onScroll();
-                    ticking = false;
-                });
-                ticking = true;
+            
+            if (searchText.includes(query)) {
+                card.style.display = 'block';
+                if(navItem) navItem.style.display = 'block';
+                hasVisibleCardInCategory = true;
+                hasVisibleCards = true;
+            } else {
+                card.style.display = 'none';
+                if(navItem) navItem.style.display = 'none';
             }
         });
 
-        // Initial check
-        onScroll();
-    }
-
-    // Back to Top Button Logic
-    const backToTopBtn = document.getElementById('backToTop');
-    const contentArea = document.querySelector('.content-area');
-
-    contentArea.addEventListener('scroll', () => {
-        if (contentArea.scrollTop > 300) {
-            backToTopBtn.classList.add('visible');
+        // Hide/show category section
+        const navCategory = firstNavItem ? firstNavItem.closest('.toc-category') : null;
+        
+        if (hasVisibleCardInCategory) {
+            category.style.display = 'block';
+            if(navCategory) {
+                navCategory.style.display = 'block';
+                navCategory.classList.remove('collapsed'); // Auto expand matched categories
+            }
         } else {
-            backToTopBtn.classList.remove('visible');
+            category.style.display = 'none';
+            if(navCategory) navCategory.style.display = 'none';
         }
     });
 
-    backToTopBtn.addEventListener('click', () => {
-        contentArea.scrollTo({
-            top: 0,
-            behavior: 'smooth'
+    noResults.style.display = hasVisibleCards ? 'none' : 'block';
+});
+
+// Scroll Spy & Active Nav Item
+const contentArea = document.getElementById('contentArea');
+const tocItems = Array.from(document.querySelectorAll('.toc-item'));
+
+contentArea.addEventListener('scroll', () => {
+    let currentActive = null;
+    const scrollPos = contentArea.scrollTop;
+    
+    // Back to top button
+    const backBtn = document.getElementById('backToTop');
+    if (scrollPos > 300) {
+        backBtn.classList.add('visible');
+    } else {
+        backBtn.classList.remove('visible');
+    }
+
+    // Find current visible component
+    const allCards = Array.from(document.querySelectorAll('.markdown-body'));
+    for (const card of allCards) {
+        if (card.style.display === 'none') continue;
+        
+        const rect = card.getBoundingClientRect();
+        // 150px offset from top
+        if (rect.top < 150 && rect.bottom > 150) {
+            currentActive = card.id;
+            break;
+        }
+    }
+
+    if (currentActive) {
+        tocItems.forEach(item => {
+            if (item.getAttribute('data-target') === currentActive) {
+                item.classList.add('active');
+                // Expand parent category if collapsed
+                const parentCat = item.closest('.toc-category');
+                if (parentCat && parentCat.classList.contains('collapsed')) {
+                    parentCat.classList.remove('collapsed');
+                }
+            } else {
+                item.classList.remove('active');
+            }
         });
+    }
+});
+
+// Back to top click
+document.getElementById('backToTop').addEventListener('click', () => {
+    contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Smooth scroll for nav clicks
+document.querySelectorAll('.toc-item').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+        
+        if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'smooth' });
+            history.pushState(null, null, `#${targetId}`);
+            
+            document.querySelectorAll('.toc-item').forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 移动端：点击菜单后自动收起侧边栏
+            if (window.innerWidth <= 768) {
+                if (typeof toggleMobileMenu === 'function') {
+                    toggleMobileMenu();
+                }
+            }
+        }
+    });
+});
+
+// 移动端菜单控制
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const sidebar = document.querySelector('.sidebar');
+const menuOverlay = document.getElementById('menuOverlay');
+
+function toggleMobileMenu() {
+    if (sidebar) sidebar.classList.toggle('active');
+    if (menuOverlay) menuOverlay.classList.toggle('active');
+}
+
+if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+}
+if (menuOverlay) {
+    menuOverlay.addEventListener('click', toggleMobileMenu);
+}
+
+// Sort Tabs Functionality
+const sortTabs = document.querySelectorAll('.sort-tab');
+const tocCategory = document.getElementById('toc-category');
+const tocFreq = document.getElementById('toc-freq');
+const contentCategory = document.getElementById('content-category');
+const contentFreq = document.getElementById('content-freq');
+
+sortTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        sortTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const sortType = tab.getAttribute('data-sort');
+        
+        // 切换显示内容
+        if (sortType === 'category') {
+            tocFreq.style.display = 'none';
+            contentFreq.style.display = 'none';
+            tocCategory.style.display = 'block';
+            contentCategory.style.display = 'block';
+        } else {
+            tocCategory.style.display = 'none';
+            contentCategory.style.display = 'none';
+            tocFreq.style.display = 'block';
+            contentFreq.style.display = 'block';
+        }
     });
 });
