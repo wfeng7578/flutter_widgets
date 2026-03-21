@@ -158,6 +158,14 @@ const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const sidebar = document.querySelector('.sidebar');
 const menuOverlay = document.getElementById('menuOverlay');
 
+// 桌面端侧边栏折叠控制
+const desktopToggleBtn = document.getElementById('desktopToggleBtn');
+if (desktopToggleBtn && sidebar) {
+    desktopToggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed-desktop');
+    });
+}
+
 function toggleMobileMenu() {
     if (sidebar) sidebar.classList.toggle('active');
     if (menuOverlay) menuOverlay.classList.toggle('active');
